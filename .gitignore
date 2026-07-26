@@ -1,7 +1,8 @@
-# Build output
+# Build output. Anchored to the repo root: an unanchored "flaky-net-harness"
+# would also ignore cmd/flaky-net-harness/.
 /bin/
 /dist/
-flaky-net-harness
+/flaky-net-harness
 *.exe
 
 # Go
