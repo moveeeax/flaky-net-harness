@@ -1,0 +1,85 @@
+[
+  {
+    "name": "nairobi-1700",
+    "version": 1,
+    "summary": "Sustained congestion on a shared HSPA cell at evening peak.",
+    "justification": "A field engineer syncing the day's job cards on the drive home shares one macro cell with commuter traffic. Throughput collapses to a fraction of the advertised rate, the round trip stretches past a third of a second and loss is bursty rather than uniform, so a single TCP flow spends most of its life in recovery. This is the condition under which an upload takes minutes instead of seconds, and the app's own request timeout starts firing.",
+    "shape": {
+      "downlink_kbit": 1200,
+      "uplink_kbit": 320,
+      "delay_ms": 340,
+      "jitter_ms": 120,
+      "loss_pct": 3.5,
+      "loss_correlation_pct": 40,
+      "reorder_pct": 1.5,
+      "duplicate_pct": 0.2,
+      "queue_limit_packets": 60
+    },
+    "run_seconds": 420,
+    "events": [
+      {
+        "kind": "kill_app",
+        "at_transfer_pct": 55,
+        "note": "Engineer switches to the maps app and Android reclaims the process while the photo batch is still in flight. The classic silent-loss trigger: no crash dialog, no error toast, no retry queue."
+      }
+    ]
+  },
+  {
+    "name": "depot-basement",
+    "version": 1,
+    "summary": "Usable link punctuated by a 40 second total stall, twice.",
+    "justification": "Underground parking and plant rooms give a link that looks connected — the radio holds, the OS reports a network — while no packet completes a round trip. Sockets are not reset, so the client sees a stall rather than an error, and any code path that treats 'no error yet' as 'still fine' will hold the user's work in memory until it is discarded.",
+    "shape": {
+      "downlink_kbit": 3000,
+      "uplink_kbit": 768,
+      "delay_ms": 180,
+      "jitter_ms": 90,
+      "loss_pct": 1.0,
+      "loss_correlation_pct": 25,
+      "reorder_pct": 0.5,
+      "duplicate_pct": 0.0,
+      "queue_limit_packets": 100
+    },
+    "run_seconds": 360,
+    "events": [
+      {
+        "kind": "stall",
+        "at_seconds": 45,
+        "for_seconds": 40,
+        "note": "Blackhole the link without tearing the interface down: the app keeps its sockets and learns nothing for 40 seconds."
+      },
+      {
+        "kind": "stall",
+        "at_seconds": 200,
+        "for_seconds": 40,
+        "note": "Second stall, after the app has had time to believe the sync succeeded."
+      }
+    ]
+  },
+  {
+    "name": "motorway-handover",
+    "version": 1,
+    "summary": "Hard disconnect at 60% of the transfer, link restored after 90 seconds.",
+    "justification": "Driving between cells at speed produces a real interface teardown, not a slow link: the address goes away mid-transfer and comes back a minute and a half later, often with a different address. This is the profile that separates apps with a durable outbox from apps that hold the job card in an in-memory queue and lose it the moment the socket dies.",
+    "shape": {
+      "downlink_kbit": 6000,
+      "uplink_kbit": 1500,
+      "delay_ms": 90,
+      "jitter_ms": 60,
+      "loss_pct": 0.5,
+      "loss_correlation_pct": 20,
+      "reorder_pct": 0.3,
+      "duplicate_pct": 0.0,
+      "queue_limit_packets": 150
+    },
+    "run_seconds": 300,
+    "events": [
+      {
+        "kind": "disconnect",
+        "at_transfer_pct": 60,
+        "for_seconds": 90,
+        "note": "Interface down mid-body. The server holds a partial object; the client holds a request it can no longer finish."
+      }
+    ]
+  }
+]

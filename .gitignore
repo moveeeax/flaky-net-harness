@@ -1,0 +1,23 @@
+# Build output
+/bin/
+/dist/
+flaky-net-harness
+*.exe
+
+# Go
+*.test
+*.out
+coverage.txt
+
+# Run artefacts (traces, recordings, generated reports)
+/out/
+*.mp4
+*.gif
+report.html
+report.md
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
