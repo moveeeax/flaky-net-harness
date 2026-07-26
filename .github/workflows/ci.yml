@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+
+      - name: gofmt
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "these files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: test
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: coverage summary
+        run: go tool cover -func=coverage.out | tail -n 1 >> "$GITHUB_STEP_SUMMARY"
+
+      - name: build
+        run: go build -o bin/flaky-net-harness ./cmd/flaky-net-harness
+
+      # The README promises these commands work. Run them, so a broken example
+      # fails the build rather than the first person who tries it.
+      - name: readme example still runs
+        run: |
+          ./bin/flaky-net-harness profiles
+          ./bin/flaky-net-harness plan --profile motorway-handover > /dev/null
+          set +e
+          ./bin/flaky-net-harness analyze \
+            --profile nairobi-1700 \
+            --trace testdata/runs/nairobi-1700/client-trace.json \
+            --server testdata/runs/nairobi-1700/server-state.json \
+            --format html --out out/report.html
+          code=$?
+          set -e
+          if [ "$code" -ne 2 ]; then
+            echo "expected exit 2 (silent data loss) from the demo run, got $code"
+            exit 1
+          fi
+          test -s out/report.html
+
+      - name: upload demo report
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-loss-report
+          path: out/report.html
+          if-no-files-found: error
