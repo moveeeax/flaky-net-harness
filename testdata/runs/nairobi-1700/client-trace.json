@@ -1,0 +1,164 @@
+{
+  "run": {
+    "target": "Example FSM 4.2.1 (anonymised trial build)",
+    "target_kind": "android-emulator",
+    "profile": "nairobi-1700",
+    "profile_version": 1,
+    "profile_fingerprint": "a9ca345d8411f9ef",
+    "started_at": "2026-07-18T17:04:11Z",
+    "operator": "harness",
+    "recording": "out/nairobi-1700/screen.mp4"
+  },
+  "attempts": [
+    {
+      "id": "a1",
+      "workflow": "job_card_submit",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/4471",
+      "started_at_ms": 2100,
+      "ended_at_ms": 9840,
+      "declared_bytes": 18422,
+      "sent_bytes": 18422,
+      "status_code": 201,
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "jc-4471",
+          "kind": "job_card",
+          "label": "Job card 4471 — boiler service, 14 fields, 2 signatures pending",
+          "bytes": 18422,
+          "sha256": "b6a3d273338be94e114044416d5fd665c1d7c2a6d0765fe32fd8559a831274a1"
+        }
+      ]
+    },
+    {
+      "id": "a2",
+      "workflow": "photo_batch_upload",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/4471/photos",
+      "started_at_ms": 11200,
+      "ended_at_ms": 214600,
+      "declared_bytes": 26214400,
+      "sent_bytes": 14418944,
+      "status_code": 0,
+      "transport_error": "connection reset by peer after target process received SIGKILL at 55% of body",
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "ph-001",
+          "kind": "photo",
+          "label": "Before — flue terminal",
+          "bytes": 4812003,
+          "sha256": "d7be88bc543f2eceb985e019fbda3bd88a45c1aaa3ff549759bf12330756db17"
+        },
+        {
+          "id": "ph-002",
+          "kind": "photo",
+          "label": "Before — gas meter reading",
+          "bytes": 5100991,
+          "sha256": "fecab750cd9703e6ab89a0e2d253e5c8f64da947177518407307e082484eb394"
+        },
+        {
+          "id": "ph-003",
+          "kind": "photo",
+          "label": "Fault — cracked heat exchanger",
+          "bytes": 5233118,
+          "sha256": "e46b34ae2a20a998e759c9e4c789b3dc8c1a296a464ce4e2e23176f176078ae1"
+        },
+        {
+          "id": "ph-004",
+          "kind": "photo",
+          "label": "Fault — corroded flue joint",
+          "bytes": 4988210,
+          "sha256": "9d2edad99761da9fcd90592aa7244193fd70b88348f71838e50c7519449b920c"
+        }
+      ]
+    },
+    {
+      "id": "a3",
+      "workflow": "photo_batch_upload",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/4471/photos",
+      "started_at_ms": 238400,
+      "ended_at_ms": 301200,
+      "declared_bytes": 4812003,
+      "sent_bytes": 4812003,
+      "status_code": 201,
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "ph-001",
+          "kind": "photo",
+          "label": "Before — flue terminal",
+          "bytes": 4812003,
+          "sha256": "d7be88bc543f2eceb985e019fbda3bd88a45c1aaa3ff549759bf12330756db17"
+        }
+      ]
+    },
+    {
+      "id": "a4",
+      "workflow": "photo_batch_upload",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/4471/photos",
+      "started_at_ms": 304900,
+      "ended_at_ms": 372100,
+      "declared_bytes": 5511044,
+      "sent_bytes": 2103296,
+      "status_code": 0,
+      "transport_error": "write: broken pipe",
+      "user_visible_error": true,
+      "objects": [
+        {
+          "id": "ph-005",
+          "kind": "photo",
+          "label": "After — replacement exchanger fitted",
+          "bytes": 5511044,
+          "sha256": "ae1853412846101d71e0983ed5d447ea53a1c82e0311c64a64c3ce0cdea3bac7"
+        }
+      ]
+    },
+    {
+      "id": "a5",
+      "workflow": "photo_batch_upload",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/4471/photos",
+      "started_at_ms": 375600,
+      "ended_at_ms": 401300,
+      "declared_bytes": 4902117,
+      "sent_bytes": 902144,
+      "status_code": 0,
+      "transport_error": "context deadline exceeded (client timeout 25s)",
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "ph-006",
+          "kind": "photo",
+          "label": "After — commissioning sticker",
+          "bytes": 4902117,
+          "sha256": "a80138ad7b8e8f07ed509222acc4712b6bff5b7d066de3ab6a9ade970a344755"
+        }
+      ]
+    },
+    {
+      "id": "a6",
+      "workflow": "signature_capture",
+      "method": "PUT",
+      "url": "https://api.example-fsm.invalid/v2/jobs/4471/signature",
+      "started_at_ms": 404800,
+      "ended_at_ms": 418900,
+      "declared_bytes": 91544,
+      "sent_bytes": 91544,
+      "status_code": 200,
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "sig-0091",
+          "kind": "signature",
+          "label": "Customer sign-off, captured on device",
+          "bytes": 91544,
+          "sha256": "6a140b40da0de9f9000b460f6d21233d2aa2f5e260d506cb8b3542afd5818d12"
+        }
+      ]
+    }
+  ]
+}

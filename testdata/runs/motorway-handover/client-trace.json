@@ -1,0 +1,106 @@
+{
+  "run": {
+    "target": "Reference outbox app (control target shipped with the harness)",
+    "target_kind": "web-pwa",
+    "profile": "motorway-handover",
+    "profile_version": 1,
+    "profile_fingerprint": "d8025cca96dcbd0f",
+    "started_at": "2026-07-18T19:40:02Z",
+    "operator": "harness",
+    "recording": "out/motorway-handover/screen.mp4"
+  },
+  "attempts": [
+    {
+      "id": "b1",
+      "workflow": "job_card_submit",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/9902",
+      "started_at_ms": 1800,
+      "ended_at_ms": 42100,
+      "declared_bytes": 21044,
+      "sent_bytes": 12602,
+      "status_code": 0,
+      "transport_error": "network is unreachable (interface down at 60% of body)",
+      "user_visible_error": true,
+      "objects": [
+        {
+          "id": "jc-9902",
+          "kind": "job_card",
+          "label": "Job card 9902 — annual inspection",
+          "bytes": 21044,
+          "sha256": "02a0894af25f71c4e71b13b6fb3561fcafcb93b7ebdb8ac9a0c981410d1b5ca3"
+        }
+      ]
+    },
+    {
+      "id": "b2",
+      "workflow": "job_card_submit",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/9902",
+      "started_at_ms": 134000,
+      "ended_at_ms": 139700,
+      "declared_bytes": 21044,
+      "sent_bytes": 21044,
+      "status_code": 201,
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "jc-9902",
+          "kind": "job_card",
+          "label": "Job card 9902 — annual inspection",
+          "bytes": 21044,
+          "sha256": "02a0894af25f71c4e71b13b6fb3561fcafcb93b7ebdb8ac9a0c981410d1b5ca3"
+        }
+      ]
+    },
+    {
+      "id": "b3",
+      "workflow": "photo_batch_upload",
+      "method": "POST",
+      "url": "https://api.example-fsm.invalid/v2/jobs/9902/photos",
+      "started_at_ms": 141200,
+      "ended_at_ms": 188400,
+      "declared_bytes": 9603118,
+      "sent_bytes": 9603118,
+      "status_code": 201,
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "ph-101",
+          "kind": "photo",
+          "label": "Before — control panel",
+          "bytes": 4771002,
+          "sha256": "a77903ffd1a9315e67917a9a2a7750b3b784bccfbb3c6843814d47519142c50e"
+        },
+        {
+          "id": "ph-102",
+          "kind": "photo",
+          "label": "After — control panel",
+          "bytes": 4832116,
+          "sha256": "a9030b4da57001a18ca501d7b1d59baad5f90d9d838a232f7c53bc9d20cc4357"
+        }
+      ]
+    },
+    {
+      "id": "b4",
+      "workflow": "signature_capture",
+      "method": "PUT",
+      "url": "https://api.example-fsm.invalid/v2/jobs/9902/signature",
+      "started_at_ms": 190100,
+      "ended_at_ms": 197300,
+      "declared_bytes": 88210,
+      "sent_bytes": 88210,
+      "status_code": 200,
+      "user_visible_error": false,
+      "objects": [
+        {
+          "id": "sig-9902",
+          "kind": "signature",
+          "label": "Customer sign-off, captured on device",
+          "bytes": 88210,
+          "sha256": "ddd6ba32b59de3d36cd3c9e36da4476e1d66993f2934bb4e4e2b51cd10cd46c5"
+        }
+      ]
+    }
+  ]
+}

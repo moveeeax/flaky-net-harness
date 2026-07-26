@@ -1,0 +1,33 @@
+{
+  "source": "vendor export: GET /v2/jobs/4471/attachments, taken 20 minutes after the run",
+  "objects": [
+    {
+      "id": "jc-4471",
+      "kind": "job_card",
+      "bytes": 18422,
+      "sha256": "b6a3d273338be94e114044416d5fd665c1d7c2a6d0765fe32fd8559a831274a1",
+      "received_at_ms": 9840
+    },
+    {
+      "id": "ph-001",
+      "kind": "photo",
+      "bytes": 4812003,
+      "sha256": "d7be88bc543f2eceb985e019fbda3bd88a45c1aaa3ff549759bf12330756db17",
+      "received_at_ms": 96200
+    },
+    {
+      "id": "srv-att-77c1",
+      "kind": "photo",
+      "bytes": 4812003,
+      "sha256": "d7be88bc543f2eceb985e019fbda3bd88a45c1aaa3ff549759bf12330756db17",
+      "received_at_ms": 301200
+    },
+    {
+      "id": "ph-002",
+      "kind": "photo",
+      "bytes": 1204224,
+      "sha256": "29f0a11b99f50c8dbe6374bb27ec406e2a1b82274ab3f648794439411899bf52",
+      "received_at_ms": 214600
+    }
+  ]
+}

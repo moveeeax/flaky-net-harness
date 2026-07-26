@@ -1,0 +1,33 @@
+{
+  "source": "vendor export: GET /v2/jobs/9902/attachments, taken 10 minutes after the run",
+  "objects": [
+    {
+      "id": "jc-9902",
+      "kind": "job_card",
+      "bytes": 21044,
+      "sha256": "02a0894af25f71c4e71b13b6fb3561fcafcb93b7ebdb8ac9a0c981410d1b5ca3",
+      "received_at_ms": 139700
+    },
+    {
+      "id": "ph-101",
+      "kind": "photo",
+      "bytes": 4771002,
+      "sha256": "a77903ffd1a9315e67917a9a2a7750b3b784bccfbb3c6843814d47519142c50e",
+      "received_at_ms": 188400
+    },
+    {
+      "id": "ph-102",
+      "kind": "photo",
+      "bytes": 4832116,
+      "sha256": "a9030b4da57001a18ca501d7b1d59baad5f90d9d838a232f7c53bc9d20cc4357",
+      "received_at_ms": 188400
+    },
+    {
+      "id": "sig-9902",
+      "kind": "signature",
+      "bytes": 88210,
+      "sha256": "ddd6ba32b59de3d36cd3c9e36da4476e1d66993f2934bb4e4e2b51cd10cd46c5",
+      "received_at_ms": 197300
+    }
+  ]
+}
