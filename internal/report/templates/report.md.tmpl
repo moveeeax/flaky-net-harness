@@ -1,0 +1,55 @@
+# Loss report — {{ .Run.Target }}
+
+**Verdict: {{ .Verdict }}**
+
+| | |
+|---|---|
+| Target | {{ .Run.Target }} ({{ .Run.TargetKind }}) |
+| Network profile | `{{ .Profile.Name }}` v{{ .Profile.Version }} (fingerprint `{{ .ProfileFprint }}`) |
+| Run started | {{ .Run.StartedAt }} |
+| Server state from | {{ .ServerSource }} |
+| Screen recording | {{ if .Run.Recording }}`{{ .Run.Recording }}`{{ else }}none{{ end }} |
+| Report generated | {{ .GeneratedAt.Format "2006-01-02 15:04:05 UTC" }} |
+
+## Headline
+
+- **{{ .SilentLossCount }} item(s) destroyed or corrupted with no user-visible error** ({{ bytes .SilentBytes }} of operator work).
+- {{ count .Counts "delivered" }} delivered intact, {{ count .Counts "corrupted" }} stored corrupted, {{ count .Counts "reported_loss" }} lost with an error shown, {{ count .Counts "duplicated" }} stored twice.
+- {{ bytes .SubmittedBytes }} submitted, {{ bytes .LostBytes }} never arrived.
+
+## Conditions
+
+{{ .Profile.Summary }}
+
+> {{ .Profile.Justification }}
+
+Steady state: {{ .Profile.Shape.UplinkKbit }} kbit up / {{ .Profile.Shape.DownlinkKbit }} kbit down, {{ .Profile.Shape.DelayMS }} ms delay ±{{ .Profile.Shape.JitterMS }} ms, {{ pct1 .Profile.Shape.LossPct }} loss ({{ pct .Profile.Shape.LossCorrelationPct }} correlated), queue {{ .Profile.Shape.QueueLimitPackets }} packets.
+
+Adversarial events:
+{{ range .Profile.Events }}- `{{ .Kind }}`{{ if .AtTransferPct }} at {{ .AtTransferPct }}% of the transfer{{ else }} at t+{{ .AtSeconds }}s{{ end }}{{ if .ForSeconds }} for {{ .ForSeconds }}s{{ end }} — {{ .Note }}
+{{ else }}- none: steady state only.
+{{ end }}
+
+## Per workflow
+
+| Workflow | Submitted | Arrived | Silently lost | Lost with error | Corrupted | Loss |
+|---|---:|---:|---:|---:|---:|---:|
+{{ range .Workflows }}| {{ humanise .Workflow }} | {{ .Submitted }} | {{ .Arrived }} | {{ .SilentlyLost }} | {{ .ReportedLost }} | {{ .Corrupted }} | {{ pct1 .LossPct }} |
+{{ end }}
+
+## Findings
+
+| Severity | Object | Kind | Workflow | Size | Outcome | Attempts | App said | Evidence |
+|---|---|---|---|---:|---|---:|---|---|
+{{ range .Findings }}| {{ upper (printf "%s" .Severity) }} | `{{ .ObjectID }}`{{ if .Label }} — {{ .Label }}{{ end }} | {{ humanise (printf "%s" .Kind) }} | {{ humanise .Workflow }} | {{ bytes .Bytes }} | {{ humanise (printf "%s" .Outcome) }} | {{ .Attempts }} | {{ if .OperatorWasTold }}error shown{{ else if .ClaimedSuccess }}success{{ else }}nothing{{ end }} | {{ .Evidence }} |
+{{ end }}
+{{ with .Warnings }}
+## Caveats on this run
+
+{{ range . }}- {{ . }}
+{{ end }}{{ end }}
+## Reproducing these conditions
+
+```sh
+{{ .Script }}
+```

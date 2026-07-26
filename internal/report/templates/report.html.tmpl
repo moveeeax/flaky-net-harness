@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loss report — {{ .Run.Target }} under {{ .Profile.Name }}</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #14181d; --muted: #5c6773; --line: #e2e6ea;
+    --crit: #b3261e; --high: #b25000; --med: #8a6d00; --info: #2f6f4f;
+    --card: #f6f8fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14181d; --fg: #e8ecf1; --muted: #9aa7b4; --line: #2a3138;
+      --crit: #ff6b5e; --high: #ffa04d; --med: #e3c14a; --info: #6fd39b;
+      --card: #1c2228;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem 1.25rem 4rem; background: var(--bg); color: var(--fg);
+         font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 62rem; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 2.25rem 0 .75rem; border-bottom: 1px solid var(--line); padding-bottom: .35rem; }
+  .sub { color: var(--muted); margin: 0 0 1.5rem; }
+  .verdict { display: inline-block; padding: .55rem .9rem; border-radius: .4rem; font-weight: 700;
+             background: var(--card); border-left: 5px solid var(--info); }
+  .verdict.fail { border-left-color: var(--crit); color: var(--crit); }
+  .verdict.degraded { border-left-color: var(--high); color: var(--high); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .75rem; margin: 1.5rem 0; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: .5rem; padding: .85rem 1rem; }
+  .tile .n { font-size: 1.7rem; font-weight: 700; line-height: 1.1; }
+  .tile .l { color: var(--muted); font-size: .82rem; }
+  .tile.crit .n { color: var(--crit); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  td.num, th.num { text-align: right; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: .5rem; padding: 1rem; overflow-x: auto; }
+  .tag { font-size: .74rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+  .sev-critical { color: var(--crit); }
+  .sev-high { color: var(--high); }
+  .sev-medium { color: var(--med); }
+  .sev-info { color: var(--info); }
+  blockquote { margin: .75rem 0; padding: .1rem 0 .1rem 1rem; border-left: 3px solid var(--line); color: var(--muted); }
+  ul.caveats li { color: var(--muted); }
+  footer { margin-top: 3rem; color: var(--muted); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Loss report — {{ .Run.Target }}</h1>
+  <p class="sub">{{ .Run.TargetKind }} under network profile <code>{{ .Profile.Name }}</code> v{{ .Profile.Version }}
+     · fingerprint <code>{{ .ProfileFprint }}</code> · run started {{ .Run.StartedAt }}</p>
+
+  <p class="verdict{{ if gt .SilentLossCount 0 }} fail{{ else if gt (count .Counts "reported_loss") 0 }} degraded{{ end }}">{{ .Verdict }}</p>
+
+  <div class="tiles">
+    <div class="tile crit"><div class="n">{{ .SilentLossCount }}</div><div class="l">destroyed or corrupted, no error shown</div></div>
+    <div class="tile"><div class="n">{{ bytes .SilentBytes }}</div><div class="l">of operator work lost silently</div></div>
+    <div class="tile"><div class="n">{{ count .Counts "delivered" }}</div><div class="l">delivered intact</div></div>
+    <div class="tile"><div class="n">{{ count .Counts "corrupted" }}</div><div class="l">stored corrupted</div></div>
+    <div class="tile"><div class="n">{{ count .Counts "reported_loss" }}</div><div class="l">lost, error shown</div></div>
+    <div class="tile"><div class="n">{{ count .Counts "duplicated" }}</div><div class="l">stored twice</div></div>
+  </div>
+
+  <h2>Conditions</h2>
+  <p>{{ .Profile.Summary }}</p>
+  <blockquote>{{ .Profile.Justification }}</blockquote>
+  <p>Steady state: {{ .Profile.Shape.UplinkKbit }} kbit up / {{ .Profile.Shape.DownlinkKbit }} kbit down,
+     {{ .Profile.Shape.DelayMS }} ms delay ±{{ .Profile.Shape.JitterMS }} ms,
+     {{ pct1 .Profile.Shape.LossPct }} loss ({{ pct .Profile.Shape.LossCorrelationPct }} correlated),
+     queue {{ .Profile.Shape.QueueLimitPackets }} packets.</p>
+  <ul>
+  {{ range .Profile.Events }}
+    <li><code>{{ .Kind }}</code>{{ if .AtTransferPct }} at {{ .AtTransferPct }}% of the transfer{{ else }} at t+{{ .AtSeconds }}s{{ end }}{{ if .ForSeconds }} for {{ .ForSeconds }}s{{ end }} — {{ .Note }}</li>
+  {{ else }}
+    <li>No adversarial events: steady state only.</li>
+  {{ end }}
+  </ul>
+
+  <h2>Per workflow</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr>
+      <th>Workflow</th><th class="num">Submitted</th><th class="num">Arrived</th>
+      <th class="num">Silently lost</th><th class="num">Lost with error</th><th class="num">Corrupted</th><th class="num">Loss</th>
+    </tr></thead>
+    <tbody>
+    {{ range .Workflows }}
+      <tr>
+        <td>{{ humanise .Workflow }}</td>
+        <td class="num">{{ .Submitted }}</td>
+        <td class="num">{{ .Arrived }}</td>
+        <td class="num">{{ .SilentlyLost }}</td>
+        <td class="num">{{ .ReportedLost }}</td>
+        <td class="num">{{ .Corrupted }}</td>
+        <td class="num">{{ pct1 .LossPct }}</td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Findings</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr>
+      <th>Severity</th><th>Object</th><th>Workflow</th><th class="num">Size</th>
+      <th>Outcome</th><th class="num">Attempts</th><th>App said</th><th>Evidence</th>
+    </tr></thead>
+    <tbody>
+    {{ range .Findings }}
+      <tr>
+        <td class="tag {{ sevClass .Severity }}">{{ upper (printf "%s" .Severity) }}</td>
+        <td><code>{{ .ObjectID }}</code>{{ if .Label }}<br><span class="l">{{ .Label }}</span>{{ end }}</td>
+        <td>{{ humanise .Workflow }}</td>
+        <td class="num">{{ bytes .Bytes }}</td>
+        <td>{{ humanise (printf "%s" .Outcome) }}</td>
+        <td class="num">{{ .Attempts }}</td>
+        <td>{{ if .OperatorWasTold }}error shown{{ else if .ClaimedSuccess }}success{{ else }}nothing{{ end }}</td>
+        <td>{{ .Evidence }}</td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+  </div>
+
+  {{ with .Warnings }}
+  <h2>Caveats on this run</h2>
+  <ul class="caveats">{{ range . }}<li>{{ . }}</li>{{ end }}</ul>
+  {{ end }}
+
+  <h2>Reproducing these conditions</h2>
+  <pre>{{ .Script }}</pre>
+
+  <footer>
+    Generated by flaky-net-harness at {{ .GeneratedAt.Format "2006-01-02 15:04:05 UTC" }} ·
+    server state from {{ .ServerSource }} ·
+    profile fingerprint <code>{{ .ProfileFprint }}</code>. Two runs are only comparable when the fingerprint matches.
+  </footer>
+</main>
+</body>
+</html>
