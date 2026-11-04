@@ -223,3 +223,7 @@ $ gofmt -l .
 
 CI runs the same commands on every push, then re-runs the README example and
 fails the build if it stops working.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
