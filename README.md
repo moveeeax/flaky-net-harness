@@ -48,7 +48,7 @@ $ cd flaky-net-harness
 $ go build -o bin/flaky-net-harness ./cmd/flaky-net-harness
 ```
 
-Go 1.24 or newer. No dependencies outside the standard library.
+Go 1.26 or newer. No dependencies outside the standard library.
 
 ## Usage example
 
