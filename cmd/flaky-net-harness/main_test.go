@@ -233,3 +233,109 @@ func TestVersionAndHelp(t *testing.T) {
 		t.Error("unknown command should exit non-zero")
 	}
 }
+
+// reportJSON writes the analyze --format json report for a fixture run and
+// returns its path.
+func reportJSON(t *testing.T, dir, profileName string) string {
+	t.Helper()
+	dst := filepath.Join(t.TempDir(), dir+".json")
+	_, errOut, code := exec(t, "analyze",
+		"--profile", profileName,
+		"--trace", filepath.Join(fixtures, dir, "client-trace.json"),
+		"--server", filepath.Join(fixtures, dir, "server-state.json"),
+		"--format", "json", "--out", dst, "--fail-on", "never")
+	if code != 0 {
+		t.Fatalf("analyze %s: exit = %d, stderr = %q", dir, code, errOut)
+	}
+	return dst
+}
+
+func TestCompareVendorFix(t *testing.T) {
+	before := reportJSON(t, "nairobi-1700", "nairobi-1700")
+	after := reportJSON(t, "nairobi-1700-fix", "nairobi-1700")
+
+	out, _, code := exec(t, "compare", before, after)
+	if code != 1 {
+		t.Fatalf("exit = %d, want 1 (silent loss remains)", code)
+	}
+	for _, want := range []string{
+		"**Verdict: PARTIAL",
+		"| FIXED | `ph-003`",
+		"| STILL SILENT | `sig-0091`",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("comparison is missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestCompareFlagsMayFollowThePaths(t *testing.T) {
+	before := reportJSON(t, "nairobi-1700", "nairobi-1700")
+	after := reportJSON(t, "nairobi-1700-fix", "nairobi-1700")
+	dst := filepath.Join(t.TempDir(), "nested", "compare.html")
+
+	_, errOut, code := exec(t, "compare", before, after, "--format", "html", "--out", dst, "--fail-on", "regressed")
+	if code != 0 {
+		t.Fatalf("--fail-on regressed with no regression: exit = %d, stderr = %q", code, errOut)
+	}
+	if !strings.Contains(errOut, "PARTIAL") || !strings.Contains(errOut, "wrote "+dst) {
+		t.Errorf("stderr should carry the verdict and confirm the write, got %q", errOut)
+	}
+	data, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(data, []byte("<!doctype html>")) {
+		t.Error("written file is not the HTML comparison")
+	}
+}
+
+func TestCompareFailOnModes(t *testing.T) {
+	before := reportJSON(t, "nairobi-1700", "nairobi-1700")
+	after := reportJSON(t, "nairobi-1700-fix", "nairobi-1700")
+
+	if _, _, code := exec(t, "compare", "--fail-on", "never", before, after); code != 0 {
+		t.Errorf("--fail-on never: exit = %d, want 0", code)
+	}
+	// Swapping the runs turns four fixes into four regressions.
+	if _, _, code := exec(t, "compare", "--fail-on", "regressed", "--format", "json", after, before); code != 2 {
+		t.Errorf("reversed runs with --fail-on regressed: exit = %d, want 2", code)
+	}
+	_, errOut, code := exec(t, "compare", "--fail-on", "sometimes", before, after)
+	if code == 0 || !strings.Contains(errOut, "unknown --fail-on") {
+		t.Errorf("exit = %d, stderr = %q", code, errOut)
+	}
+}
+
+func TestCompareRefusesDifferentFingerprints(t *testing.T) {
+	before := reportJSON(t, "nairobi-1700", "nairobi-1700")
+	other := reportJSON(t, "motorway-handover", "motorway-handover")
+
+	_, errOut, code := exec(t, "compare", before, other)
+	if code == 0 {
+		t.Fatal("expected a non-zero exit for mismatched fingerprints")
+	}
+	if !strings.Contains(errOut, "profile fingerprints differ") || !strings.Contains(errOut, "--allow-mismatch") {
+		t.Errorf("stderr = %q", errOut)
+	}
+
+	out, errOut, _ := exec(t, "compare", "--allow-mismatch", before, other)
+	if !strings.Contains(errOut, "warning: NOT COMPARABLE") {
+		t.Errorf("stderr should warn loudly, got %q", errOut)
+	}
+	if !strings.Contains(out, "## Caveats on this comparison") {
+		t.Errorf("the comparison itself should carry the caveat:\n%s", out)
+	}
+}
+
+func TestCompareRequiresTwoReports(t *testing.T) {
+	before := reportJSON(t, "nairobi-1700", "nairobi-1700")
+	_, errOut, code := exec(t, "compare", before)
+	if code == 0 || !strings.Contains(errOut, "exactly two reports") {
+		t.Errorf("exit = %d, stderr = %q", code, errOut)
+	}
+	_, errOut, code = exec(t, "compare", before, filepath.Join(fixtures, "nairobi-1700", "client-trace.json"))
+	if code == 0 || !strings.Contains(errOut, "analyze --format json") {
+		t.Errorf("a client trace is not a report: exit = %d, stderr = %q", code, errOut)
+	}
+}

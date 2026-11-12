@@ -65,11 +65,31 @@ jobs:
             exit 1
           fi
           test -s out/report.html
+          ./bin/flaky-net-harness analyze --profile nairobi-1700 \
+            --trace testdata/runs/nairobi-1700/client-trace.json \
+            --server testdata/runs/nairobi-1700/server-state.json \
+            --format json --out out/before.json --fail-on never
+          ./bin/flaky-net-harness analyze --profile nairobi-1700 \
+            --trace testdata/runs/nairobi-1700-fix/client-trace.json \
+            --server testdata/runs/nairobi-1700-fix/server-state.json \
+            --format json --out out/after.json --fail-on never
+          set +e
+          ./bin/flaky-net-harness compare out/before.json out/after.json \
+            --format html --out out/compare.html
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 (partial fix, silent loss remains) from the demo comparison, got $code"
+            exit 1
+          fi
+          test -s out/compare.html
 
       - name: upload demo report
         if: matrix.go == '1.27'
         uses: actions/upload-artifact@v7
         with:
           name: demo-loss-report
-          path: out/report.html
+          path: |
+            out/report.html
+            out/compare.html
           if-no-files-found: error

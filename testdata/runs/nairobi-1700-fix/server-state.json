@@ -1,0 +1,47 @@
+{
+  "source": "vendor export: GET /v2/jobs/4471/attachments, taken 20 minutes after the re-run on 4.2.2",
+  "objects": [
+    {
+      "id": "jc-4471",
+      "kind": "job_card",
+      "bytes": 18422,
+      "sha256": "b6a3d273338be94e114044416d5fd665c1d7c2a6d0765fe32fd8559a831274a1",
+      "received_at_ms": 9900
+    },
+    {
+      "id": "ph-001",
+      "kind": "photo",
+      "bytes": 4812003,
+      "sha256": "d7be88bc543f2eceb985e019fbda3bd88a45c1aaa3ff549759bf12330756db17",
+      "received_at_ms": 73600
+    },
+    {
+      "id": "ph-002",
+      "kind": "photo",
+      "bytes": 5100991,
+      "sha256": "fecab750cd9703e6ab89a0e2d253e5c8f64da947177518407307e082484eb394",
+      "received_at_ms": 179800
+    },
+    {
+      "id": "ph-003",
+      "kind": "photo",
+      "bytes": 5233118,
+      "sha256": "e46b34ae2a20a998e759c9e4c789b3dc8c1a296a464ce4e2e23176f176078ae1",
+      "received_at_ms": 248400
+    },
+    {
+      "id": "ph-004",
+      "kind": "photo",
+      "bytes": 4988210,
+      "sha256": "9d2edad99761da9fcd90592aa7244193fd70b88348f71838e50c7519449b920c",
+      "received_at_ms": 313900
+    },
+    {
+      "id": "ph-006",
+      "kind": "photo",
+      "bytes": 4902117,
+      "sha256": "a80138ad7b8e8f07ed509222acc4712b6bff5b7d066de3ab6a9ade970a344755",
+      "received_at_ms": 411700
+    }
+  ]
+}

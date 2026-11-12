@@ -13,6 +13,7 @@ import (
 	texttemplate "text/template"
 
 	"github.com/moveeeax/flaky-net-harness/internal/analyze"
+	"github.com/moveeeax/flaky-net-harness/internal/compare"
 	"github.com/moveeeax/flaky-net-harness/internal/netem"
 	"github.com/moveeeax/flaky-net-harness/internal/trace"
 )
@@ -62,6 +63,21 @@ func funcs() map[string]any {
 		"sevCount": func(m map[analyze.Severity]int, k string) int {
 			return m[analyze.Severity(k)]
 		},
+		"changeCount": func(m map[compare.Change]int, k string) int {
+			return m[compare.Change(k)]
+		},
+		"outcome": func(o analyze.Outcome) string {
+			if o == "" {
+				return "absent"
+			}
+			return trace.Humanise(string(o))
+		},
+		"verdictClass": func(c *compare.Comparison) string {
+			if c.Verdict == compare.VerdictUnchanged && c.ExitCode() != 0 {
+				return "unchanged-loss"
+			}
+			return strings.ToLower(string(c.Verdict))
+		},
 	}
 }
 
@@ -85,6 +101,29 @@ func Render(w io.Writer, r *analyze.Report, f Format) error {
 			return fmt.Errorf("report: parsing html template: %w", err)
 		}
 		return t.Execute(w, v)
+	}
+	return fmt.Errorf("report: unsupported format %q", f)
+}
+
+// RenderComparison writes a before/after comparison in the requested format.
+func RenderComparison(w io.Writer, c *compare.Comparison, f Format) error {
+	switch f {
+	case FormatJSON:
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		return enc.Encode(c)
+	case FormatMarkdown:
+		t, err := texttemplate.New("compare.md.tmpl").Funcs(funcs()).ParseFS(templatesFS, "templates/compare.md.tmpl")
+		if err != nil {
+			return fmt.Errorf("report: parsing markdown comparison template: %w", err)
+		}
+		return t.Execute(w, c)
+	case FormatHTML:
+		t, err := htmltemplate.New("compare.html.tmpl").Funcs(funcs()).ParseFS(templatesFS, "templates/compare.html.tmpl")
+		if err != nil {
+			return fmt.Errorf("report: parsing html comparison template: %w", err)
+		}
+		return t.Execute(w, c)
 	}
 	return fmt.Errorf("report: unsupported format %q", f)
 }

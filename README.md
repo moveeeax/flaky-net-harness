@@ -179,6 +179,59 @@ $ flaky-net-harness analyze \
 An app with a durable outbox passes the same class of run that destroys five
 items in the other trace. The harness does not simply cry wolf.
 
+### 5. Verify the vendor's fix
+
+After a FAIL, the vendor ships a build and the same profile is run again.
+`compare` takes the two `--format json` reports and says, object by object,
+what changed. `testdata/runs/nairobi-1700-fix` is that re-run against a fixed
+build:
+
+```console
+$ flaky-net-harness analyze --profile nairobi-1700 \
+    --trace testdata/runs/nairobi-1700/client-trace.json \
+    --server testdata/runs/nairobi-1700/server-state.json \
+    --format json --out out/before.json --fail-on never
+$ flaky-net-harness analyze --profile nairobi-1700 \
+    --trace testdata/runs/nairobi-1700-fix/client-trace.json \
+    --server testdata/runs/nairobi-1700-fix/server-state.json \
+    --format json --out out/after.json --fail-on never
+$ flaky-net-harness compare out/before.json out/after.json --format md
+```
+
+> **Verdict: PARTIAL — 4 of 5 silent losses fixed, 1 still lost silently, none new**
+
+| Change | Object | Workflow | Before | After | Evidence |
+|---|---|---|---|---|---|
+| STILL SILENT | `sig-0091` | signature capture | silent loss | silent loss | the app received HTTP 200 and showed no error, but the server has no such object |
+| FIXED | `ph-002` | photo batch upload | corrupted | delivered | arrived intact after 2 attempts |
+| FIXED | `ph-003` | photo batch upload | silent loss | delivered | arrived intact |
+| IMPROVED | `ph-001` | photo batch upload | duplicated | delivered | arrived intact |
+| ONLY BEFORE | `srv-att-77c1` | | unattributed | absent | present on the server but absent from the client trace; check the proxy captured the whole run |
+| UNCHANGED | `ph-005` | photo batch upload | reported loss | reported loss | lost in transit (38% sent) and the app surfaced an error to the operator |
+
+(trimmed; the real table has a row for every object in either run)
+
+The verdict is one of:
+
+| Verdict | Meaning | Exit |
+|---|---|---|
+| `REGRESSED` | at least one object is silently lost after the fix that was not before, including objects new to the after run | 2 |
+| `PARTIAL` | some silent losses are gone, others remain or were not exercised by the after run, none are new | 1 |
+| `UNCHANGED` | nothing was fixed and nothing is new | 1 if silent loss remains, 0 otherwise |
+| `FIXED` | every silent loss from the before run is gone and none are new | 0 |
+
+Objects are matched by id. A silent loss whose object does not appear in the
+after run counts as not fixed: the re-run never exercised it.
+`--fail-on silent` (the default) exits non-zero while any silent loss remains,
+`--fail-on regressed` only on a regression, `--fail-on never` always exits 0.
+`--format html --out` writes a self-contained page like the loss report.
+
+`compare` refuses when the two reports carry different profile fingerprints,
+because a change in outcome could then be the network and not the fix.
+`--allow-mismatch` compares anyway and puts a `NOT COMPARABLE` caveat at the top
+of the output and on stderr. A report whose stored fingerprint does not match
+the profile embedded in it is rejected as edited.
+
 ## Why the classification is the product
 
 | Outcome | Meaning | Severity |
