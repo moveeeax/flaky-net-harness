@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/moveeeax/flaky-net-harness/internal/analyze"
+	"github.com/moveeeax/flaky-net-harness/internal/compare"
 	"github.com/moveeeax/flaky-net-harness/internal/netem"
 	"github.com/moveeeax/flaky-net-harness/internal/profile"
 	"github.com/moveeeax/flaky-net-harness/internal/report"
@@ -38,6 +39,13 @@ Usage:
       Diff what the client submitted against what the server holds and emit the
       loss report. Exit 2 on silent data loss, 1 on loss the operator was told
       about, 0 when everything arrived.
+
+  flaky-net-harness compare <before.json> <after.json> [--format html|md|json] [--out <path>]
+                            [--fail-on silent|regressed|never] [--allow-mismatch]
+      Compare two analyze --format json reports, typically the failing run and
+      the run against the vendor's fix. Refuses when the profile fingerprints
+      differ unless --allow-mismatch is given. Exit 2 on new silent loss, 1 when
+      silent loss remains, 0 when the after run has none.
 
   flaky-net-harness version
 `
@@ -70,6 +78,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return cmdPlan(args[1:], stdout)
 	case "analyze", "analyse":
 		return cmdAnalyze(args[1:], stdout, stderr)
+	case "compare":
+		return cmdCompare(args[1:], stdout, stderr)
 	case "version":
 		fmt.Fprintln(stdout, versionString())
 		return nil
@@ -201,20 +211,11 @@ func cmdAnalyze(args []string, out, errOut io.Writer) error {
 		return err
 	}
 
-	dst := out
-	if *outPath != "" {
-		if dir := filepath.Dir(*outPath); dir != "." {
-			if err := os.MkdirAll(dir, 0o755); err != nil {
-				return fmt.Errorf("creating %s: %w", dir, err)
-			}
-		}
-		fh, err := os.Create(*outPath)
-		if err != nil {
-			return fmt.Errorf("creating %s: %w", *outPath, err)
-		}
-		defer fh.Close()
-		dst = fh
+	dst, closeOut, err := openOut(out, *outPath)
+	if err != nil {
+		return err
 	}
+	defer closeOut()
 	if err := report.Render(dst, rep, f); err != nil {
 		return err
 	}
@@ -241,6 +242,110 @@ func cmdAnalyze(args []string, out, errOut io.Writer) error {
 		return nil
 	}
 	return fmt.Errorf("unknown --fail-on %q (want silent, any or never)", *failOn)
+}
+
+func cmdCompare(args []string, out, errOut io.Writer) error {
+	fs := flag.NewFlagSet("compare", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	format := fs.String("format", "md", "comparison format: html, md or json")
+	outPath := fs.String("out", "", "write the comparison to this file instead of stdout")
+	failOn := fs.String("fail-on", "silent", "exit non-zero on: silent, regressed, never")
+	allowMismatch := fs.Bool("allow-mismatch", false, "compare runs recorded under different profile fingerprints")
+	paths, err := parseInterspersed(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(paths) != 2 {
+		return fmt.Errorf("compare takes exactly two reports (before.json after.json), got %d", len(paths))
+	}
+	switch *failOn {
+	case "silent", "regressed", "never":
+	default:
+		return fmt.Errorf("unknown --fail-on %q (want silent, regressed or never)", *failOn)
+	}
+	f, err := report.ParseFormat(*format)
+	if err != nil {
+		return err
+	}
+	before, err := compare.LoadReport(paths[0])
+	if err != nil {
+		return err
+	}
+	after, err := compare.LoadReport(paths[1])
+	if err != nil {
+		return err
+	}
+	cmp, err := compare.Compare(before, after, compare.Options{AllowMismatch: *allowMismatch})
+	if errors.Is(err, compare.ErrFingerprintMismatch) {
+		return fmt.Errorf("%w\nrefusing to compare; pass --allow-mismatch to compare anyway", err)
+	}
+	if err != nil {
+		return err
+	}
+
+	dst, closeOut, err := openOut(out, *outPath)
+	if err != nil {
+		return err
+	}
+	defer closeOut()
+	if err := report.RenderComparison(dst, cmp, f); err != nil {
+		return err
+	}
+	if *outPath != "" {
+		fmt.Fprintf(errOut, "%s\nwrote %s (%d objects)\n", cmp.Summary, *outPath, len(cmp.Transitions))
+	}
+	for _, w := range cmp.Warnings {
+		fmt.Fprintf(errOut, "warning: %s\n", w)
+	}
+
+	code := cmp.ExitCode()
+	switch {
+	case *failOn == "never":
+		return nil
+	case *failOn == "regressed" && code != 2:
+		return nil
+	case code != 0:
+		return exitCode(code)
+	}
+	return nil
+}
+
+// parseInterspersed lets flags follow positional arguments, so
+// "compare a.json b.json --format html" works as the usage text shows.
+func parseInterspersed(fs *flag.FlagSet, args []string) ([]string, error) {
+	var positional []string
+	for {
+		if err := fs.Parse(args); err != nil {
+			return nil, err
+		}
+		args = fs.Args()
+		if len(args) == 0 {
+			return positional, nil
+		}
+		if args[0] == "--" {
+			return append(positional, args[1:]...), nil
+		}
+		positional = append(positional, args[0])
+		args = args[1:]
+	}
+}
+
+// openOut returns stdout, or a file at path with its parent directories
+// created. The returned func closes the file.
+func openOut(stdout io.Writer, path string) (io.Writer, func(), error) {
+	if path == "" {
+		return stdout, func() {}, nil
+	}
+	if dir := filepath.Dir(path); dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return nil, nil, fmt.Errorf("creating %s: %w", dir, err)
+		}
+	}
+	fh, err := os.Create(path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating %s: %w", path, err)
+	}
+	return fh, func() { fh.Close() }, nil
 }
 
 func lookup(name string) (profile.Profile, error) {
